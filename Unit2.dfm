@@ -1,8 +1,8 @@
 object Form2: TForm2
   Left = 0
   Top = 0
-  Width = 532
-  Height = 558
+  Width = 538
+  Height = 567
   AutoScroll = True
   AutoSize = True
   BorderWidth = 10
@@ -20,7 +20,7 @@ object Form2: TForm2
     Top = 0
     Width = 500
     Height = 500
-    ActivePage = tsPolynomials
+    ActivePage = tsPower
     TabOrder = 0
     object tsPower: TTabSheet
       Caption = 'Power / Exponential'
@@ -134,7 +134,7 @@ object Form2: TForm2
         Height = 23
         NumbersOnly = True
         TabOrder = 4
-        Text = '100000000'
+        Text = '10000000'
       end
       object btnPower: TButton
         Left = 3

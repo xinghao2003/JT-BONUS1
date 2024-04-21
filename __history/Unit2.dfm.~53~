@@ -1,8 +1,8 @@
 object Form2: TForm2
   Left = 0
   Top = 0
-  Width = 532
-  Height = 558
+  Width = 538
+  Height = 567
   AutoScroll = True
   AutoSize = True
   BorderWidth = 10
@@ -58,6 +58,8 @@ object Form2: TForm2
           Width = 97
           Height = 17
           Caption = 'cmath pow'
+          Checked = True
+          State = cbChecked
           TabOrder = 0
         end
         object cbForLoop: TCheckBox
@@ -66,6 +68,8 @@ object Form2: TForm2
           Width = 97
           Height = 17
           Caption = 'for-loop'
+          Checked = True
+          State = cbChecked
           TabOrder = 1
         end
         object cbSquaring: TCheckBox
@@ -74,6 +78,8 @@ object Form2: TForm2
           Width = 97
           Height = 17
           Caption = 'squaring'
+          Checked = True
+          State = cbChecked
           TabOrder = 2
         end
         object cbSquaringBitShift: TCheckBox
@@ -82,6 +88,8 @@ object Form2: TForm2
           Width = 97
           Height = 17
           Caption = 'squaring _>>'
+          Checked = True
+          State = cbChecked
           TabOrder = 3
         end
       end
@@ -108,7 +116,7 @@ object Form2: TForm2
         Height = 23
         NumbersOnly = True
         TabOrder = 2
-        Text = '10'
+        Text = '2'
       end
       object editPowerN: TEdit
         Left = 29
@@ -117,7 +125,7 @@ object Form2: TForm2
         Height = 23
         NumbersOnly = True
         TabOrder = 3
-        Text = '10'
+        Text = '30'
       end
       object editPowerRepeat: TEdit
         Left = 3
@@ -126,7 +134,7 @@ object Form2: TForm2
         Height = 23
         NumbersOnly = True
         TabOrder = 4
-        Text = '10'
+        Text = '10000000'
       end
       object btnPower: TButton
         Left = 3
@@ -175,7 +183,7 @@ object Form2: TForm2
         Height = 23
         NumbersOnly = True
         TabOrder = 0
-        Text = '10'
+        Text = '2'
       end
       object editPolyN: TEdit
         Left = 29
@@ -184,7 +192,7 @@ object Form2: TForm2
         Height = 23
         NumbersOnly = True
         TabOrder = 1
-        Text = '10'
+        Text = '30'
       end
       object btnEvaluate: TButton
         Left = 4
@@ -208,7 +216,7 @@ object Form2: TForm2
         Height = 23
         NumbersOnly = True
         TabOrder = 3
-        Text = '10'
+        Text = '10000000'
       end
       object gbAlgoPoly: TGroupBox
         Left = 3
@@ -223,6 +231,8 @@ object Form2: TForm2
           Width = 97
           Height = 17
           Caption = 'Array'
+          Checked = True
+          State = cbChecked
           TabOrder = 0
         end
         object cbLinkedList: TCheckBox
@@ -231,6 +241,8 @@ object Form2: TForm2
           Width = 97
           Height = 17
           Caption = 'Linked List'
+          Checked = True
+          State = cbChecked
           TabOrder = 1
         end
         object cbHorner: TCheckBox
@@ -239,6 +251,8 @@ object Form2: TForm2
           Width = 112
           Height = 17
           Caption = 'Horner'#39's Method'
+          Checked = True
+          State = cbChecked
           TabOrder = 2
         end
       end
