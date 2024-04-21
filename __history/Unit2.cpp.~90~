@@ -1,0 +1,489 @@
+//---------------------------------------------------------------------------
+
+#include <vcl.h>
+#pragma hdrstop
+
+#include "Unit2.h"
+#include <fstream>
+#include <string>
+#include <random>  // Include this for std::mt19937 and std::uniform_int_distribution
+#include <chrono>
+#include <thread>
+
+//---------------------------------------------------------------------------
+#pragma package(smart_init)
+#pragma resource "*.dfm"
+
+TForm2 *Form2;
+
+int startRange = 1;
+int endRange = 100;
+
+//---------------------------------------------------------------------------
+__fastcall TForm2::TForm2(TComponent* Owner)
+	: TForm(Owner)
+{
+	OpenTextFileDialogPoly->Filter = "Text Files|*.txt";
+	SaveTextFileDialogPoly->Filter = "Text Files|*.txt";
+	SaveTextFileDialogPoly->DefaultExt = "txt";
+    rePowerOutput->Text = "";
+	rePolyA->Text = "";
+	rePolyOutput->Text = "";
+	editRangeStart->Text = "1";
+	editRangeEnd->Text = "100";
+}
+//---------------------------------------------------------------------------
+
+// Function to convert UnicodeString (or TCaption) to std::string
+std::string UnicodeToString(const System::UnicodeString& unicodeStr) {
+	AnsiString ansiStr = unicodeStr; // Convert from UnicodeString to AnsiString
+	return std::string(ansiStr.c_str()); // Convert from AnsiString to std::string and return
+}
+
+// Function to convert std::string to UnicodeString (or TCaption)
+System::UnicodeString StringToUnicode(const std::string& stdStr) {
+	return System::UnicodeString(stdStr.c_str());
+}
+
+std::vector<int> numbers;
+
+void __fastcall TForm2::AddNumbersToRichEdit()
+{
+	rePolyA->Lines->BeginUpdate();
+	try
+	{
+		for (int number : numbers)
+		{
+			rePolyA->Lines->Add(IntToStr(number));
+		}
+	}
+    __finally
+	{
+		rePolyA->Lines->EndUpdate();
+	}
+}
+
+void __fastcall TForm2::rePolyAParsing() {
+	numbers.clear();           // Clear the vector to prevent duplication
+
+	bool validData = true;
+	UnicodeString text = rePolyA->Text;
+	TStringList *list = new TStringList;
+
+	try
+	{
+		list->Text = text;
+		for (int i = 0; i < list->Count; i++)
+		{
+			int num;
+			if (TryStrToInt(list->Strings[i], num))  // Validates and converts the string to int
+			{
+				numbers.push_back(num);
+			}
+			else
+			{
+				validData = false;
+				ShowMessage("Invalid input: " + list->Strings[i]);
+				break;
+			}
+		}
+	}
+	__finally
+	{
+		delete list;
+	}
+}
+
+void __fastcall TForm2::btnLoadClick(TObject *Sender)
+{
+	if (OpenTextFileDialogPoly->Execute())
+	{
+		std::string fileName = AnsiString(OpenTextFileDialogPoly->FileName).c_str();
+		std::ifstream file(fileName);
+		if (file.is_open())
+		{
+			numbers.clear();
+			int value;
+			while (file >> value)
+			{
+				numbers.push_back(value);
+			}
+			file.close();
+
+            rePolyA->Clear();
+			AddNumbersToRichEdit();
+			ShowMessage(("Loaded " + std::to_string(numbers.size()) + " numbers.").c_str());
+		}
+		else
+		{
+			ShowMessage("Unable to open file.");
+		}
+	}
+}
+//---------------------------------------------------------------------------
+
+void __fastcall TForm2::btnSaveClick(TObject *Sender)
+{
+	if (SaveTextFileDialogPoly->Execute())
+    {
+		std::string fileName = AnsiString(SaveTextFileDialogPoly->FileName).c_str();
+		std::ofstream file(fileName);
+		if (file.is_open())
+		{
+			rePolyAParsing();
+			for (int num : numbers)
+			{
+				file << num << std::endl;
+			}
+			file.close();
+
+			ShowMessage("File saved successfully.");
+		}
+		else
+		{
+			ShowMessage("Unable to open file.");
+		}
+	}
+}
+
+//---------------------------------------------------------------------------
+
+void __fastcall TForm2::rePolyAKeyPress(TObject *Sender, System::WideChar &Key)
+{
+    if (!((Key >= '0' && Key <= '9') || Key == '\r' || Key == '\b')) // Allow digits, Enter (carriage return), and backspace
+    {
+        Key = 0;  // Discard character by setting it to 0
+	}
+}
+//---------------------------------------------------------------------------
+void __fastcall TForm2::btnRandomGenClick(TObject *Sender)
+{
+	// Clear the existing numbers
+	numbers.clear();
+
+	// Read the number of elements to generate from editPolyK
+	int k = StrToInt(editPolyK->Text);  // Assuming editPolyK is a TEdit component
+
+	// Random number generation setup
+	std::random_device rd;  // Obtain a random number from hardware
+	std::mt19937 gen(rd()); // Seed the generator
+	std::uniform_int_distribution<> distrib(startRange, endRange); // Define the range
+
+	// Generate k random numbers and add them to the vector
+	for (int i = 0; i < k; i++) {
+		numbers.push_back(distrib(gen));
+	}
+
+	// Optional: Update the UI or log output
+	rePolyA->Clear();
+	AddNumbersToRichEdit();
+	ShowMessage("Generated " + IntToStr(k) + " random numbers.");
+}
+//---------------------------------------------------------------------------
+
+void __fastcall TForm2::editRangeStartChange(TObject *Sender)
+{
+    // Try to convert the text to an integer safely
+	if (TryStrToInt(editRangeStart->Text, startRange))
+	{
+		if (startRange == 0)
+		{
+			ShowMessage("The start range cannot be zero.");
+			editRangeStart->Text = "1";  // Clear the invalid input or set to a default value
+		}
+		else if (endRange < startRange)
+		{
+			ShowMessage("The start range cannot be more than the start range.");
+			editRangeStart->Text = IntToStr(endRange - 1);  // Clear the invalid input
+		}
+	}
+	else
+	{
+		// Handle non-numeric input if necessary
+		if (editRangeStart->Text == "") // Check to avoid showing a message when the field is cleared
+		{
+			editRangeStart->Text = "1";  // Clear the non-numeric input
+		}
+	}
+}
+
+//---------------------------------------------------------------------------
+
+void __fastcall TForm2::editRangeEndChange(TObject *Sender)
+{
+	// Try to convert the text to an integer safely
+    if (TryStrToInt(editRangeEnd->Text, endRange))
+	{
+        if (endRange == 0)
+		{
+			ShowMessage("The end range cannot be zero.");
+			editRangeEnd->Text = "100";  // Clear the invalid input
+		}
+		else if (endRange < startRange)
+		{
+			ShowMessage("The end range cannot be less than the start range.");
+			editRangeEnd->Text = IntToStr(startRange + 1);  // Clear the invalid input
+		}
+	}
+	else
+	{
+        // Handle non-numeric input if necessary
+		if (editRangeEnd->Text == "") // Check to avoid showing a message when the field is cleared
+		{
+			editRangeEnd->Text = "100";  // Clear the non-numeric input
+		}
+	}
+}
+//---------------------------------------------------------------------------
+
+void DisplayResults(TRichEdit* rePolyOutput, int numIterations, const std::string resultString, float elapsed_time, const AnsiString& timeUnit) {
+	// Display the final result
+	if(resultString == "") {
+		rePolyOutput->Lines->Add("Final Result: " + StringToUnicode(resultString));
+	}
+
+	// Format the elapsed time with two decimal places and display
+	AnsiString formattedTime = FormatFloat("0.000000", elapsed_time);
+	rePolyOutput->Lines->Add("Time taken for " + IntToStr(numIterations) + " iterations: " + formattedTime + " " + timeUnit + "\n");
+}
+
+void DisplayResultsSafe(TRichEdit* reOutput, int numIterations, const std::string& resultString, float elapsed_time, const AnsiString& timeUnit) {
+	TThread::Synchronize(nullptr, [&]() {
+		if(!resultString.empty()) {
+			reOutput->Lines->Add("Results: " + String(resultString.c_str()));
+		}
+		AnsiString formattedTime = FormatFloat("0.000000", elapsed_time);
+		reOutput->Lines->Add("Time taken for " + IntToStr(numIterations) + " iterations: " + formattedTime + " " + timeUnit + "\n");
+	});
+}
+
+void DisplayTextSafe(TRichEdit* reOutput, const String msg) {
+	TThread::Synchronize(nullptr, [&]() {
+		reOutput->Lines->Add(msg);
+	});
+}
+
+void polynomialEvaluationThread(TRichEdit* rePolyOutput, const std::vector<int>& numbers, int k, int n, int numIterations, bool useArray, bool useLinkedList, bool useHorner, bool outputResult) {
+	// Clear the output at the beginning of the thread execution
+	TThread::Synchronize(nullptr, [&]() {
+		rePolyOutput->Clear();
+	});
+
+	if (useArray) {
+		try {
+			DisplayTextSafe(rePolyOutput, "Array Method. Processing ...");
+			std::string resultString = "";
+			std::vector<long long> results;
+			auto start = std::chrono::high_resolution_clock::now();
+			for (int i = 0; i < numIterations; i++) {
+				results = evaluatePolynomial(numbers, k, n);
+			}
+			auto end = std::chrono::high_resolution_clock::now();
+			std::chrono::duration<float, std::milli> elapsed = end - start;
+			if (outputResult) {
+				for (auto num : results) {
+					if (!resultString.empty()) resultString += ", ";
+					resultString += std::to_string(num);
+				}   
+			}
+			DisplayResultsSafe(rePolyOutput, numIterations, resultString, elapsed.count(), "ms");
+		} catch (const std::exception& e) {
+			DisplayTextSafe(rePolyOutput, "Array Method Exception: " + String(e.what()));
+		}
+	}
+
+	if (useLinkedList) {
+		try {
+			DisplayTextSafe(rePolyOutput, "Linked List Method. Processing ...");
+			std::string resultString = "";
+			std::vector<long long> results;
+            PolyNode* head = nullptr;
+			for (int j = 0; j < numbers.size(); j++) {
+				head = addPolyNode(head, numbers[j], j);
+			}
+			auto start = std::chrono::high_resolution_clock::now();
+			for (int i = 0; i < numIterations; i++) {
+				results = evaluatePolynomialLinkedList(head, k, n);
+			}
+			auto end = std::chrono::high_resolution_clock::now();
+            deletePolynomial(head);
+			std::chrono::duration<float, std::milli> elapsed = end - start;
+			if (outputResult) {
+				for (auto num : results) {
+					if (!resultString.empty()) resultString += ", ";
+					resultString += std::to_string(num);
+				}
+			}
+			DisplayResultsSafe(rePolyOutput, numIterations, resultString, elapsed.count(), "ms");
+		} catch (const std::exception& e) {
+			DisplayTextSafe(rePolyOutput, "Linked List Method Exception: " + String(e.what()));
+		}
+	}
+
+	if (useHorner) {
+		try {
+			DisplayTextSafe(rePolyOutput, "Horner's Method. Processing ...");
+			std::string resultString = "";
+			std::vector<long long> results;
+			auto start = std::chrono::high_resolution_clock::now();
+			for (int i = 0; i < numIterations; i++) {
+				results = evaluatePolynomialHorner(numbers, k, n);
+			}
+			auto end = std::chrono::high_resolution_clock::now();
+			std::chrono::duration<float, std::milli> elapsed = end - start;
+			if (outputResult) {
+				for (auto num : results) {
+					if (!resultString.empty()) resultString += ", ";
+					resultString += std::to_string(num);
+				}
+			}
+			DisplayResultsSafe(rePolyOutput, numIterations, resultString, elapsed.count(), "ms");
+		} catch (const std::exception& e) {
+			DisplayTextSafe(rePolyOutput, "Horner Method Exception: " + String(e.what()));
+		}
+	}
+}
+
+
+void __fastcall TForm2::btnEvaluateClick(TObject *Sender)
+{
+	// Preprocessing
+	rePolyAParsing();
+	rePolyOutput->Clear();
+	
+	int k = StrToInt(editPolyK->Text);
+
+	if (numbers.size() < k) {
+		ShowMessage((std::to_string(k - numbers.size()) + " more numbers needed.").c_str());
+		return;
+	} 
+
+	while (numbers.size() > k) {
+		numbers.pop_back();
+	}
+
+	rePolyA->Clear();
+	AddNumbersToRichEdit();
+	rePolyAParsing();
+	
+	int n = StrToInt(editPolyN->Text);
+	int numIterations = StrToInt(editPolyRepeat->Text); // Get the number of iterations
+
+	bool outputResult = cbPolyResult->Checked;
+	bool useArray = cbArray->Checked; // Assuming cbArray is a TCheckBox for the array method
+	bool useLinkedList = cbLinkedList->Checked; // Assuming cbLinkedList is a TCheckBox for linked list method
+	bool useHorner = cbHorner->Checked; // Assuming cbHorner is a TCheckBox for Horner's method
+
+	btnEvaluate->Caption = "Processing";
+	btnEvaluate->Enabled = !btnEvaluate->Enabled;
+
+	// Start the worker thread
+	std::thread worker(polynomialEvaluationThread, rePolyOutput, numbers, k, n, numIterations, useArray, useLinkedList, useHorner, outputResult);
+	worker.detach(); // Detach to allow it to run independently
+}
+//---------------------------------------------------------------------------
+
+void powerThread(TRichEdit* rePowerOutput, TButton* btnAction, int x, int n, int numIterations, bool usePow, bool useForLoop, bool useSquaring, bool useBitShifting) {
+	// Clear the output at the beginning of the thread execution
+	TThread::Synchronize(nullptr, [&]() {
+		rePowerOutput->Clear();
+	});
+
+	long long result_std_pow;
+	long long result_naive;
+	long long result_squaring;
+	long long result_bit_shift;
+
+	if (usePow) {
+		try {
+			DisplayTextSafe(rePowerOutput, "CMath Pow Method. Processing ...");
+
+			auto start_std_pow = std::chrono::high_resolution_clock::now();
+			for (int i = 0; i < numIterations; ++i) {
+				result_std_pow = std::pow(x, n);
+			}
+			auto end_std_pow = std::chrono::high_resolution_clock::now();
+			std::chrono::duration<float, std::milli> elapsed_std_pow = end_std_pow - start_std_pow;
+			std::string resultString = std::to_string(result_std_pow);
+
+			DisplayResultsSafe(rePowerOutput, numIterations, resultString, elapsed_std_pow.count(), "ms");
+		} catch (const std::exception& e) {
+			DisplayTextSafe(rePowerOutput, "CMath Pow Method Exception: " + String(e.what()));
+		}
+	}
+
+	if (useForLoop) {
+		try {
+			DisplayTextSafe(rePowerOutput, "For-loop Method. Processing ...");
+
+			auto start_naive = std::chrono::high_resolution_clock::now();
+			for (int i = 0; i < numIterations; ++i) {
+				result_naive = power(x, n);
+			}
+			auto end_naive = std::chrono::high_resolution_clock::now();
+			std::chrono::duration<float, std::milli> elapsed_naive = end_naive - start_naive;
+			std::string resultString = std::to_string(result_naive);
+
+			DisplayResultsSafe(rePowerOutput, numIterations, resultString, elapsed_naive.count(), "ms");
+		} catch (const std::exception& e) {
+			DisplayTextSafe(rePowerOutput, "For-loop Method Exception: " + String(e.what()));
+		}
+	}
+
+	if (useSquaring) {
+		try {
+			DisplayTextSafe(rePowerOutput, "Squaring Method. Processing ...");
+
+			auto start_squaring = std::chrono::high_resolution_clock::now();
+			for (int i = 0; i < numIterations; ++i) {
+				result_squaring = powerSquaring(x, n);
+			}
+			auto end_squaring = std::chrono::high_resolution_clock::now();
+			std::chrono::duration<float, std::milli> elapsed_squaring = end_squaring - start_squaring;
+			std::string resultString = std::to_string(result_squaring);
+
+			DisplayResultsSafe(rePowerOutput, numIterations, resultString, elapsed_squaring.count(), "ms");
+		} catch (const std::exception& e) {
+			DisplayTextSafe(rePowerOutput, "Squaring Method Exception: " + String(e.what()));
+		}
+	}
+
+	if (useBitShifting) {
+		try {
+			DisplayTextSafe(rePowerOutput, "Squaring with Bit Shifting Method. Processing ...");
+
+			auto start_bit_shift = std::chrono::high_resolution_clock::now();
+			for (int i = 0; i < numIterations; ++i) {
+				result_bit_shift = powerSquaringBitShift(x, n);
+			}
+			auto end_bit_shift = std::chrono::high_resolution_clock::now();
+			std::chrono::duration<float, std::milli> elapsed_bit_shift = end_bit_shift - start_bit_shift;
+			std::string resultString = std::to_string(result_bit_shift);
+
+			DisplayResultsSafe(rePowerOutput, numIterations, resultString, elapsed_bit_shift.count(), "ms");
+		} catch (const std::exception& e) {
+			DisplayTextSafe(rePowerOutput, "Squaring with Bit Shifting Method Exception: " + String(e.what()));
+		}
+	}
+}
+
+void __fastcall TForm2::btnPowerClick(TObject *Sender)
+{
+	int x = StrToInt(editPowerX->Text);
+	int n = StrToInt(editPowerN->Text);
+	int numIterations = StrToInt(editPowerRepeat->Text); // Get the number of iterations
+
+	bool usePow = cbPow->Checked;
+	bool useForLoop = cbForLoop->Checked;
+	bool useSquaring = cbSquaring->Checked;
+	bool useBitShifting = cbSquaringBitShift->Checked;
+
+	btnPower->Caption = "Processing";
+	btnPower->Enabled = !btnPower->Enabled;
+
+	// Start the worker thread
+	std::thread worker(powerThread, rePowerOutput, x, n, numIterations, usePow, useForLoop, useSquaring, useBitShifting);
+	worker.detach(); // Detach to allow it to run independently
+}
+//---------------------------------------------------------------------------
+
